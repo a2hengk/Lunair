@@ -20,10 +20,7 @@ export const Button = ({
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className={`${styles.body} ${styles[color]} ${styles[border]}`}
-    >
+    <button className={styles.button} data-color={color} onClick={handleClick}>
       {content}
     </button>
   );

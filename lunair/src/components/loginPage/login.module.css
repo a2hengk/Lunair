@@ -1,0 +1,80 @@
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.95));
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(16, 24, 40, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transform: translateY(0);
+    opacity: 1;
+    animation: entrance 420ms cubic-bezier(.2, .9, .2, 1) both;
+}
+
+.brand {
+    text-align: center;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 0.75rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6c63ff 0%, #9b8cff 100%);
+    box-shadow: 0 6px 18px rgba(108, 99, 255, 0.12);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+}
+
+.subtitle {
+    margin: 0.25rem 0 0;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.label {
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+@keyframes entrance {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.998);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card {
+        animation: none;
+    }
+}

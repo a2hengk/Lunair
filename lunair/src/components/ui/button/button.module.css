@@ -2,12 +2,36 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.25rem;
     border: none;
-    border-radius: 4px;
-    background-color: var(--primary-color);
+    border-radius: 10px;
+    background-color: #6c63ff;
     color: #fff;
     font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.12);
+    transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.button:hover {
+    transform: translateY(-2px);
+}
+
+.button:active {
+    transform: translateY(0);
+    opacity: 0.98;
+}
+
+[data-color="secondary"] {
+    background: transparent;
+    color: #111827;
+    border: 1px solid rgba(16, 24, 40, 0.06);
+    box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .button {
+        transition: none;
+        transform: none;
+    }
 }
