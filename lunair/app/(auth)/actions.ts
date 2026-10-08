@@ -7,6 +7,7 @@ import { APIError } from "better-auth/api";
 import { z } from "zod";
 import { auth, USERNAME_PATTERN } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
+import { hasAnyUser, SETUP_CODE } from "@/lib/setup";
 
 export type FormState = { error?: string; values?: Record<string, string> } | undefined;
 
@@ -82,16 +83,46 @@ export async function signUpWithInvite(_prev: FormState, formData: FormData): Pr
     return { error: "Diese Einladung gilt nicht mehr. Frag nach einem neuen Link." };
   }
 
+  // Bei Fehler Reservierung zurückgeben, damit der Link weiter funktioniert.
+  const release = () => db.update(schema.invites).set({ claimedAt: null }).where(eq(schema.invites.code, code));
+  return registerWithClaimedCode(code, { name, email, password, username }, formData, release);
+}
+
+// ---------- Ersteinrichtung (erster Account ohne Einladung) ----------
+
+export async function createFirstAccount(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = signUpSchema.omit({ code: true }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message, values: keep(formData) };
+
+  const alreadySetUp = "lunair ist schon eingerichtet. Melde dich an oder frag nach einer Einladung.";
+  if (await hasAnyUser()) return { error: alreadySetUp };
+
+  // Primärschlüssel macht das atomar: nur ein Request kann diese Zeile anlegen.
+  const [claimed] = await db
+    .insert(schema.invites)
+    .values({ code: SETUP_CODE, claimedAt: new Date() })
+    .onConflictDoNothing()
+    .returning();
+  if (!claimed) return { error: alreadySetUp };
+
+  const release = () => db.delete(schema.invites).where(eq(schema.invites.code, SETUP_CODE));
+  return registerWithClaimedCode(SETUP_CODE, parsed.data, formData, release);
+}
+
+// ---------- gemeinsam ----------
+
+async function registerWithClaimedCode(
+  code: string,
+  body: { name: string; email: string; password: string; username: string },
+  formData: FormData,
+  release: () => Promise<unknown>,
+): Promise<FormState> {
   let userId: string;
   try {
-    const result = await auth.api.signUpEmail({
-      body: { name, email, password, username },
-      headers: await headers(),
-    });
+    const result = await auth.api.signUpEmail({ body, headers: await headers() });
     userId = result.user.id;
   } catch (err) {
-    // Reservierung zurückgeben, damit der Link weiter funktioniert.
-    await db.update(schema.invites).set({ claimedAt: null }).where(eq(schema.invites.code, code));
+    await release();
     if (err instanceof APIError) return { error: signUpErrorMessage(err), values: keep(formData) };
     throw err;
   }
