@@ -2,15 +2,16 @@
 
 import { useActionState } from "react";
 import { Field, FormError, SubmitButton } from "@/components/form";
-import { signUpWithInvite } from "../../actions";
+import { createFirstAccount, signUpWithInvite } from "../../actions";
 
-export function SignUpForm({ code }: { code: string }) {
-  const [state, action] = useActionState(signUpWithInvite, undefined);
+/** Mit code = Einladung einlösen, ohne code = Ersteinrichtung. */
+export function SignUpForm({ code }: { code?: string }) {
+  const [state, action] = useActionState(code ? signUpWithInvite : createFirstAccount, undefined);
   const v = state?.values;
 
   return (
     <form action={action} className="space-y-4">
-      <input type="hidden" name="code" value={code} />
+      {code && <input type="hidden" name="code" value={code} />}
       <Field
         label="Name"
         name="name"
@@ -41,7 +42,15 @@ export function SignUpForm({ code }: { code: string }) {
         hint="Nur falls du dein Passwort vergisst."
         required
       />
-      <Field label="Passwort" name="password" type="password" autoComplete="new-password" hint="Mindestens 8 Zeichen." required minLength={8} />
+      <Field
+        label="Passwort"
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        hint="Mindestens 8 Zeichen."
+        required
+        minLength={8}
+      />
       <FormError message={state?.error} />
       <SubmitButton pendingText="Account wird angelegt …">Account anlegen</SubmitButton>
     </form>

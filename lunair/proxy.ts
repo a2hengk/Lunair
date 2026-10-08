@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/setup"];
 
 // Nur ein schneller Cookie-Check (optimistisch). Die echte Prüfung
 // passiert serverseitig in requireUser() – hier keine DB-Abfragen.
