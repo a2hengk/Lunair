@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# lunair
 
-## Getting Started
+Euer Tagebuch unter Freunden – Fotos, Texte und Stories in einer geschlossenen Gruppe. Rein nur mit Einladung.
 
-First, run the development server:
+## Stack
+
+Next.js 16 (App Router, Server Actions) · Postgres + Drizzle · Better Auth (Benutzername + Passwort) · Tailwind 4
+
+## Lokal starten
 
 ```bash
+npm install
+cp .env.example .env          # DATABASE_URL und BETTER_AUTH_SECRET eintragen
+npm run db:migrate            # Tabellen anlegen
+npm run invite                # erste Einladung erzeugen, Link im Browser öffnen
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`BETTER_AUTH_SECRET` erzeugen: `openssl rand -base64 32`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Nach dem ersten Account lädt man weitere Leute unter **Einstellungen → Freunde einladen** ein. Jeder Link gilt für eine Person und 7 Tage.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy (Vercel)
 
-## Learn More
+1. Postgres anlegen (z. B. Neon über den Vercel Marketplace), `DATABASE_URL` setzen
+2. `BETTER_AUTH_SECRET` und `BETTER_AUTH_URL` (die echte Domain) als Env-Variablen setzen
+3. Einmal `npm run db:migrate` gegen die Produktions-DB laufen lassen, dann `npm run invite`
 
-To learn more about Next.js, take a look at the following resources:
+## Schema ändern
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`lib/db/schema.ts` anpassen → `npm run db:generate` → `npm run db:migrate`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Stand
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] Login, Registrierung nur per Einladungslink, Logout
+- [x] Profil (`/u/[username]`) mit Name und Bio, bearbeiten unter `/settings`
+- [x] Startseite mit Story-Leiste (Mitglieder) und leerem Feed
+- [ ] Bilder-Upload (R2) inkl. Profilbild
+- [ ] Posts (Foto/Text) und Feed
+- [ ] Stories
+- [ ] Likes und Kommentare
+- [ ] PWA
