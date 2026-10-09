@@ -2,11 +2,18 @@ import Link from "next/link";
 import { asc, ne } from "drizzle-orm";
 import { Avatar } from "@/components/avatar";
 import { Moon, Wordmark } from "@/components/moon";
+import { PostCard } from "@/components/post-card";
 import { db, schema } from "@/lib/db";
+import { FEED_PAGE_SIZE, getFeed } from "@/lib/posts";
 import { requireUser } from "@/lib/session";
 
-export default async function HomePage() {
+type Props = { searchParams: Promise<{ vor?: string }> };
+
+export default async function HomePage({ searchParams }: Props) {
   const me = await requireUser();
+  const { vor } = await searchParams;
+  const before = vor && !Number.isNaN(Date.parse(vor)) ? new Date(vor) : undefined;
+  const feed = await getFeed(before);
 
   const others = await db
     .select({
@@ -60,28 +67,53 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* Feed: Posts kommen im nächsten Schritt */}
-      <section aria-label="Beiträge" className="px-6 py-16 text-center">
-        <Moon className="mx-auto size-10 text-moon" />
-        <h1 className="mt-4 font-display text-2xl">Noch ist es ruhig hier</h1>
-        {others.length === 0 ? (
-          <>
-            <p className="mx-auto mt-2 max-w-xs text-muted">
-              Du bist bisher allein in lunair. Lad deine Freunde ein, dann füllt sich der Feed.
-            </p>
-            <Link
-              href="/settings#einladen"
-              className="mt-6 inline-block rounded-xl bg-ink px-5 py-3 font-semibold text-sky"
-            >
-              Freunde einladen
+      {feed.length > 0 ? (
+        <section aria-label="Beiträge">
+          {before && (
+            <Link href="/" className="block border-b border-line px-4 py-3 text-center text-sm font-medium text-dusk">
+              Zu den neuesten Beiträgen
             </Link>
-          </>
-        ) : (
-          <p className="mx-auto mt-2 max-w-xs text-muted">
-            Sobald jemand ein Foto oder einen Text postet, steht es hier – das Neueste oben.
-          </p>
-        )}
-      </section>
+          )}
+          {feed.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+          {feed.length === FEED_PAGE_SIZE ? (
+            <Link
+              href={`/?vor=${encodeURIComponent(feed[feed.length - 1].createdAt.toISOString())}`}
+              className="block px-4 py-6 text-center font-medium text-dusk"
+            >
+              Ältere Beiträge
+            </Link>
+          ) : (
+            <p className="px-4 py-8 text-center text-sm text-muted">Das war alles.</p>
+          )}
+        </section>
+      ) : (
+        <section aria-label="Beiträge" className="px-6 py-16 text-center">
+          <Moon className="mx-auto size-10 text-moon" />
+          <h1 className="mt-4 font-display text-2xl">Noch ist es ruhig hier</h1>
+          {others.length === 0 ? (
+            <>
+              <p className="mx-auto mt-2 max-w-xs text-muted">
+                Du bist bisher allein in lunair. Lad deine Freunde ein, dann füllt sich der Feed.
+              </p>
+              <Link
+                href="/settings#einladen"
+                className="mt-6 inline-block rounded-xl bg-ink px-5 py-3 font-semibold text-sky"
+              >
+                Freunde einladen
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="mx-auto mt-2 max-w-xs text-muted">Erzähl den anderen, wie dein Tag war.</p>
+              <Link href="/new" className="mt-6 inline-block rounded-xl bg-ink px-5 py-3 font-semibold text-sky">
+                Ersten Beitrag schreiben
+              </Link>
+            </>
+          )}
+        </section>
+      )}
     </>
   );
 }

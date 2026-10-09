@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // --- Better Auth Tabellen (Namen/Spalten müssen zum Better-Auth-Schema passen) ---
 
@@ -76,5 +76,39 @@ export const invites = pgTable("invites", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/** Ein Beitrag: Text, Fotos oder beides. user.image und post_media.path sind Speicher-Pfade, keine URLs. */
+export const posts = pgTable(
+  "posts",
+  {
+    id: text("id").primaryKey(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("posts_created_at_idx").on(t.createdAt.desc()),
+    index("posts_author_created_idx").on(t.authorId, t.createdAt.desc()),
+  ],
+);
+
+export const postMedia = pgTable(
+  "post_media",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    position: integer("position").notNull(),
+  },
+  (t) => [index("post_media_post_id_idx").on(t.postId)],
+);
+
 export type User = typeof user.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type PostMedia = typeof postMedia.$inferSelect;

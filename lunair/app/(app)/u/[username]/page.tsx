@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { Avatar } from "@/components/avatar";
+import { PostGrid } from "@/components/post-grid";
 import { db, schema } from "@/lib/db";
+import { countUserPosts, getUserPosts } from "@/lib/posts";
 import { requireUser } from "@/lib/session";
 
 type Props = { params: Promise<{ username: string }> };
@@ -33,6 +35,7 @@ export default async function ProfilePage({ params }: Props) {
   if (!profile) notFound();
 
   const isMe = profile.id === me.id;
+  const [posts, postCount] = await Promise.all([getUserPosts(profile.id), countUserPosts(profile.id)]);
 
   return (
     <>
@@ -50,7 +53,9 @@ export default async function ProfilePage({ params }: Props) {
           <Avatar name={profile.name} seed={profile.username ?? profile.id} image={profile.image} size="lg" />
           <div className="min-w-0">
             <h1 className="font-display text-3xl leading-tight break-words">{profile.name}</h1>
-            <p className="mt-1 text-sm text-muted">Dabei seit {joined.format(profile.createdAt)}</p>
+            <p className="mt-1 text-sm text-muted">
+              {postCount === 1 ? "1 Beitrag" : `${postCount} Beiträge`} · dabei seit {joined.format(profile.createdAt)}
+            </p>
           </div>
         </div>
 
@@ -70,10 +75,19 @@ export default async function ProfilePage({ params }: Props) {
         )}
       </section>
 
-      <section aria-label="Beiträge" className="border-t border-line px-6 py-14 text-center">
-        <p className="text-muted">
-          {isMe ? "Deine Beiträge erscheinen hier als Raster." : `${profile.name} hat noch nichts gepostet.`}
-        </p>
+      <section aria-label="Beiträge" className="border-t border-line">
+        {posts.length > 0 ? (
+          <PostGrid posts={posts} />
+        ) : isMe ? (
+          <div className="px-6 py-14 text-center">
+            <p className="text-muted">Du hast noch nichts gepostet.</p>
+            <Link href="/new" className="mt-4 inline-block font-semibold text-dusk">
+              Ersten Beitrag schreiben
+            </Link>
+          </div>
+        ) : (
+          <p className="px-6 py-14 text-center text-muted">{profile.name} hat noch nichts gepostet.</p>
+        )}
       </section>
     </>
   );

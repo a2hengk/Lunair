@@ -24,9 +24,16 @@ Solange es keinen Account gibt, bietet `/login` die Ersteinrichtung an. Danach k
 Root Directory im Projekt: `lunair`. Funktionen laufen in Frankfurt (`vercel.json`).
 
 1. **Storage → Neon Postgres** anlegen, Region Frankfurt, mit dem Projekt verbinden – setzt `DATABASE_URL`
-2. **Settings → Environment Variables:** `BETTER_AUTH_SECRET` für Production und Preview
-3. Neu deployen – der Build spielt die Migrationen automatisch ein
-4. Seite öffnen → „Ersten Account anlegen“
+2. **Storage → Blob** anlegen, Zugriff **Private**, mit dem Projekt verbinden – setzt den Blob-Token
+3. **Settings → Environment Variables:** `BETTER_AUTH_SECRET` für Production und Preview
+4. Neu deployen – der Build spielt die Migrationen automatisch ein
+5. Seite öffnen → „Ersten Account anlegen“
+
+## Bilder
+
+Fotos werden im Browser auf max. 1600 px verkleinert und als JPEG neu geschrieben (EXIF/GPS fliegt dabei raus), Profilbilder auf 512 px quadratisch. Gespeichert wird in einem **privaten** Vercel-Blob-Store; ausgeliefert nur über `/api/media/…`, das den Login prüft. In der DB stehen Pfade, keine URLs – ein Wechsel zu R2 betrifft nur `lib/storage.ts`.
+
+Ohne Blob-Token speichert lunair lokal unter `.data/uploads`. Auf Vercel ohne Blob gehen nur Text-Beiträge.
 
 `BETTER_AUTH_URL` ist nur für eine eigene Domain nötig; `*.vercel.app` wird automatisch erkannt.
 
@@ -39,8 +46,8 @@ Root Directory im Projekt: `lunair`. Funktionen laufen in Frankfurt (`vercel.jso
 - [x] Login, Registrierung nur per Einladungslink, Logout
 - [x] Profil (`/u/[username]`) mit Name und Bio, bearbeiten unter `/settings`
 - [x] Startseite mit Story-Leiste (Mitglieder) und leerem Feed
-- [ ] Bilder-Upload (R2) inkl. Profilbild
-- [ ] Posts (Foto/Text) und Feed
+- [x] Profilbild hochladen, ändern, entfernen
+- [x] Beiträge mit Text und/oder bis zu 4 Fotos, Feed, Profil-Raster, Einzelansicht, Löschen
 - [ ] Stories
 - [ ] Likes und Kommentare
 - [ ] PWA
