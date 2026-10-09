@@ -42,6 +42,8 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 60, // 60 Tage eingeloggt bleiben
     updateAge: 60 * 60 * 24,
+    // Session 5 Min. im signierten Cookie: jedes Bild prüft den Login, ohne jedes Mal die DB zu fragen.
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
   // Registrierung nur über unsere Server Action mit Einladungscode –
   // der öffentliche HTTP-Endpunkt ist deshalb abgeschaltet.

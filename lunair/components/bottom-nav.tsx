@@ -45,11 +45,10 @@ export function BottomNav({ username }: { username: string }) {
           <HomeIcon />
           Start
         </Link>
-        {/* Posten kommt im nächsten Schritt (Upload-Pipeline) */}
-        <span className={`${item(false)} cursor-not-allowed opacity-50`} aria-disabled="true" title="Kommt bald">
+        <Link href="/new" className={item(pathname === "/new")} aria-current={pathname === "/new" ? "page" : undefined}>
           <PlusIcon />
           Posten
-        </span>
+        </Link>
         <Link
           href={profileHref}
           className={item(pathname === profileHref)}

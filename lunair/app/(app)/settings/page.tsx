@@ -5,6 +5,7 @@ import { signOut } from "@/app/(auth)/actions";
 import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { createInvite } from "./actions";
+import { AvatarForm } from "./avatar-form";
 import { CopyLink } from "./copy-link";
 import { ProfileForm } from "./profile-form";
 
@@ -40,9 +41,8 @@ export default async function SettingsPage() {
         <h2 id="profil" className="mb-4 text-lg font-semibold">
           Profil
         </h2>
-        <p className="mb-4 text-sm text-muted">
-          Benutzername: @{me.displayUsername ?? me.username} · Profilbild kommt mit dem Foto-Upload.
-        </p>
+        <AvatarForm name={me.name} seed={me.username ?? me.id} image={me.image} />
+        <p className="mb-4 text-sm text-muted">Benutzername: @{me.displayUsername ?? me.username}</p>
         <ProfileForm name={me.name} bio={me.bio ?? ""} />
       </section>
 
