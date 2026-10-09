@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, boolean, index, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 // --- Better Auth Tabellen (Namen/Spalten müssen zum Better-Auth-Schema passen) ---
 
@@ -109,7 +109,26 @@ export const postMedia = pgTable(
   (t) => [index("post_media_post_id_idx").on(t.postId)],
 );
 
-/** Eine Reaktion pro Person und Beitrag; andere Emoji = umstellen, gleiche nochmal = weg. */
+/** Eigene Sticker: 256×256 PNG mit Transparenz, für alle in der Gruppe nutzbar. */
+export const stickers = pgTable(
+  "stickers",
+  {
+    id: text("id").primaryKey(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    path: text("path").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("stickers_owner_idx").on(t.ownerId)],
+);
+
+/**
+ * Bis zu 3 Reaktionen pro Person und Beitrag (Limit im Code).
+ * `emoji` ist der Reaktions-Schlüssel: ein Emoji oder „s:<stickerId>“.
+ * Bei Sticker-Reaktionen zeigt sticker_id auf den Sticker – wird er gelöscht, verschwindet die Reaktion mit.
+ */
 export const postReactions = pgTable(
   "post_reactions",
   {
@@ -120,11 +139,13 @@ export const postReactions = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     emoji: text("emoji").notNull(),
+    stickerId: text("sticker_id").references(() => stickers.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.postId, t.userId] })],
+  (t) => [primaryKey({ columns: [t.postId, t.userId, t.emoji] })],
 );
 
+/** Kommentar oder Antwort. Antworten hängen immer am obersten Kommentar (eine Ebene, wie bei Insta). */
 export const comments = pgTable(
   "comments",
   {
@@ -135,10 +156,32 @@ export const comments = pgTable(
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    body: text("body").notNull(),
+    parentId: text("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
+    body: text("body"),
+    stickerId: text("sticker_id").references(() => stickers.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [index("comments_post_created_idx").on(t.postId, t.createdAt)],
+  (t) => [
+    index("comments_post_created_idx").on(t.postId, t.createdAt),
+    index("comments_parent_idx").on(t.parentId),
+  ],
+);
+
+/** Wie post_reactions, nur für Kommentare. */
+export const commentReactions = pgTable(
+  "comment_reactions",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    stickerId: text("sticker_id").references(() => stickers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.commentId, t.userId, t.emoji] })],
 );
 
 export type User = typeof user.$inferSelect;
@@ -146,3 +189,4 @@ export type Invite = typeof invites.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type PostMedia = typeof postMedia.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type Sticker = typeof stickers.$inferSelect;

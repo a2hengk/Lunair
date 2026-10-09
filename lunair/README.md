@@ -49,6 +49,8 @@ Ohne Blob-Token speichert lunair lokal unter `.data/uploads`. Auf Vercel ohne Bl
 - [x] Profilbild hochladen, ändern, entfernen
 - [x] Beiträge mit Text und/oder bis zu 4 Fotos, Feed, Profil-Raster, Einzelansicht, Löschen
 - [x] Profil-Banner (3:1), Zurück-Button
-- [x] Reaktionen (6 Emojis, eine pro Person) und Kommentare
+- [x] Reaktionen (6 Emojis + eigene Sticker, bis zu 3 pro Person) auf Beiträge und Kommentare
+- [x] Kommentare mit Antworten (eine Ebene) und Stickern
+- [x] Eigene Sticker (Einstellungen → Sticker, 256 × 256 PNG, für alle nutzbar)
 - [ ] Stories
 - [ ] PWA

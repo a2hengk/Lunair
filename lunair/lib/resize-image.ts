@@ -92,3 +92,41 @@ export async function resizeImage(file: File, { maxEdge, aspect, maxBytes = 950_
   }
   return { blob, width: w, height: h } satisfies ResizedImage;
 }
+
+/**
+ * Sticker: ganzes Motiv in ein 256×256-Feld einpassen (nichts abschneiden),
+ * Rand bleibt transparent, Ausgabe als PNG – so behalten freigestellte Bilder ihre Form.
+ */
+export const STICKER_SIZE = 256;
+
+export async function makeSticker(file: File, maxBytes = 350_000): Promise<Blob> {
+  let source: ImageBitmap | HTMLImageElement;
+  try {
+    source = await decode(file);
+  } catch {
+    throw new Error(`„${file.name}“ lässt sich nicht öffnen. Ist das ein Bild?`);
+  }
+
+  for (const size of [STICKER_SIZE, 200, 160]) {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Dein Browser kann keine Bilder bearbeiten.");
+    const scale = Math.min(size / source.width, size / source.height);
+    const w = Math.round(source.width * scale);
+    const h = Math.round(source.height * scale);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, (size - w) / 2, (size - h) / 2, w, h);
+
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode"))), "image/png"),
+    );
+    if (blob.size <= maxBytes) {
+      if ("close" in source) source.close();
+      return blob;
+    }
+  }
+  if ("close" in source) source.close();
+  throw new Error("Das Bild ist zu detailreich für einen Sticker. Probier ein einfacheres.");
+}

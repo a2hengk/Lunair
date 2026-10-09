@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/back-button";
+import { StickerImage } from "@/components/sticker-image";
 import { PostCard } from "@/components/post-card";
 import { getComments, getPost, getReactors } from "@/lib/posts";
 import { requireUser } from "@/lib/session";
@@ -18,7 +19,7 @@ export default async function PostPage({ params }: Props) {
   const post = await getPost(postId, me.id);
   if (!post) notFound();
 
-  const [comments, reactors] = await Promise.all([getComments(post.id), getReactors(post.id)]);
+  const [comments, reactors] = await Promise.all([getComments(post.id, me.id), getReactors(post.id)]);
 
   return (
     <>
@@ -32,8 +33,8 @@ export default async function PostPage({ params }: Props) {
       {reactors.length > 0 && (
         <ul className="space-y-1 border-b border-line px-4 py-3 text-sm" aria-label="Wer reagiert hat">
           {reactors.map((r) => (
-            <li key={r.emoji} className="flex gap-2">
-              <span aria-hidden="true">{r.emoji}</span>
+            <li key={r.key} className="flex items-center gap-2">
+              {r.sticker ? <StickerImage sticker={r.sticker} size="xs" /> : <span aria-hidden="true">{r.key}</span>}
               <span className="text-muted">
                 {r.people.map((p, i) => (
                   <span key={`${p.username}-${i}`}>

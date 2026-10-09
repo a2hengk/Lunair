@@ -5,11 +5,13 @@ import { signOut } from "@/app/(auth)/actions";
 import { BackButton } from "@/components/back-button";
 import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { getAllStickers } from "@/lib/stickers";
 import { createInvite } from "./actions";
 import { AvatarForm } from "./avatar-form";
 import { BannerForm } from "./banner-form";
 import { CopyLink } from "./copy-link";
 import { ProfileForm } from "./profile-form";
+import { StickerManager } from "./sticker-manager";
 
 export const metadata: Metadata = { title: "Einstellungen" };
 
@@ -29,6 +31,8 @@ export default async function SettingsPage() {
       ),
     )
     .orderBy(desc(schema.invites.createdAt));
+
+  const myStickers = (await getAllStickers()).filter((s) => s.ownerId === me.id);
 
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -50,6 +54,16 @@ export default async function SettingsPage() {
         <BannerForm image={me.bannerImage} />
         <p className="mb-4 text-sm text-muted">Benutzername: @{me.displayUsername ?? me.username}</p>
         <ProfileForm name={me.name} bio={me.bio ?? ""} />
+      </section>
+
+      <section id="sticker" aria-labelledby="sticker-titel" className="mb-10 scroll-mt-4">
+        <h2 id="sticker-titel" className="mb-1 text-lg font-semibold">
+          Sticker
+        </h2>
+        <p className="mb-4 text-sm text-muted">
+          Eigene Sticker zum Reagieren und Kommentieren. Alle in lunair können sie benutzen.
+        </p>
+        <StickerManager mine={myStickers.map(({ id, name, path }) => ({ id, name, path }))} />
       </section>
 
       <section id="einladen" aria-labelledby="einladen-titel" className="mb-10 scroll-mt-4">
