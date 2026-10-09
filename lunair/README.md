@@ -52,5 +52,7 @@ Ohne Blob-Token speichert lunair lokal unter `.data/uploads`. Auf Vercel ohne Bl
 - [x] Reaktionen (6 Emojis + eigene Sticker, bis zu 3 pro Person) auf Beiträge und Kommentare
 - [x] Kommentare mit Antworten (eine Ebene) und Stickern
 - [x] Eigene Sticker (Einstellungen → Sticker, 256 × 256 PNG, für alle nutzbar)
+- [x] Fotos am PC: Pfeile, Pfeiltasten, mit der Maus wischen; Vollbild mit Zoom
+- [x] Reaktionen und neueste Kommentare steigen beim Sichtbarwerden auf und verblassen
 - [ ] Stories
 - [ ] PWA

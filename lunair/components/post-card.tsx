@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { FeedPost } from "@/lib/posts";
 import { fullDate, timeAgo } from "@/lib/time-ago";
 import { Avatar } from "./avatar";
+import { FloatingReactions } from "./floating-reactions";
 import { MediaCarousel } from "./media-carousel";
 import { ReactionBar } from "./reaction-bar";
 
@@ -21,7 +22,8 @@ export function PostCard({ post, linkToPost = true }: { post: FeedPost; linkToPo
   );
 
   return (
-    <article className="border-b border-line pb-4">
+    <article className="relative border-b border-line pb-4">
+      <FloatingReactions postId={post.id} reactions={post.reactions} comments={post.commentPreview} />
       <header className="flex items-center gap-3 px-4 py-3">
         <Link href={profileHref} className="shrink-0" tabIndex={-1} aria-hidden="true">
           <Avatar name={author.name} seed={author.username ?? author.id} image={author.image} size="sm" />
