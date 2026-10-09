@@ -59,7 +59,7 @@ export function PostCard({ post, linkToPost = true }: { post: FeedPost; linkToPo
       <ReactionBar
         postId={post.id}
         reactions={post.reactions}
-        myReaction={post.myReaction}
+        myReactions={post.myReactions}
         commentCount={post.commentCount}
         showCommentLink={linkToPost}
       />

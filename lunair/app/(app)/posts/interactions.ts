@@ -2,64 +2,109 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
-import { isReaction, MAX_COMMENT } from "@/lib/reactions";
+import { MAX_COMMENT, MAX_REACTIONS_PER_PERSON, parseReactionKey } from "@/lib/reactions";
 import { requireUser } from "@/lib/session";
+import { getSticker } from "@/lib/stickers";
 
-const { postReactions, comments, posts } = schema;
+const { postReactions, commentReactions, comments, posts } = schema;
 
-async function postExists(postId: string) {
-  const [row] = await db.select({ id: posts.id }).from(posts).where(eq(posts.id, postId)).limit(1);
+export type ReactionTarget = { kind: "post" | "comment"; id: string };
+export type ReactionResult = { error?: string };
+
+async function targetExists({ kind, id }: ReactionTarget) {
+  const table = kind === "post" ? posts : comments;
+  const [row] = await db.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
   return Boolean(row);
 }
 
-// ---------- Reaktionen ----------
+// ---------- Reaktionen (Beiträge und Kommentare) ----------
 
-/** Gleiche Reaktion nochmal = entfernen, andere = umstellen. */
-export async function toggleReaction(postId: string, emoji: string) {
+/** Antippen = setzen, nochmal antippen = wegnehmen. Bis zu 3 verschiedene pro Person. */
+export async function toggleReaction(target: ReactionTarget, key: string): Promise<ReactionResult> {
   const me = await requireUser();
-  if (!isReaction(emoji) || !(await postExists(postId))) return;
+  const parsed = parseReactionKey(key);
+  if (!parsed || !(await targetExists(target))) return { error: "Das ging nicht." };
 
-  const where = and(eq(postReactions.postId, postId), eq(postReactions.userId, me.id));
-  const [current] = await db.select({ emoji: postReactions.emoji }).from(postReactions).where(where).limit(1);
-
-  if (current?.emoji === emoji) {
-    await db.delete(postReactions).where(where);
-  } else {
-    await db
-      .insert(postReactions)
-      .values({ postId, userId: me.id, emoji })
-      .onConflictDoUpdate({
-        target: [postReactions.postId, postReactions.userId],
-        set: { emoji, createdAt: new Date() },
-      });
+  let stickerId: string | null = null;
+  if ("stickerId" in parsed) {
+    if (!(await getSticker(parsed.stickerId))) return { error: "Den Sticker gibt es nicht mehr." };
+    stickerId = parsed.stickerId;
   }
 
+  const t = target.kind === "post" ? postReactions : commentReactions;
+  const targetCol = target.kind === "post" ? postReactions.postId : commentReactions.commentId;
+  const mine = and(eq(targetCol, target.id), eq(t.userId, me.id));
+
+  const result = await db.transaction(async (tx) => {
+    const existing = await tx.select({ key: t.emoji }).from(t).where(and(mine, eq(t.emoji, key))).limit(1);
+    if (existing.length) {
+      await tx.delete(t).where(and(mine, eq(t.emoji, key)));
+      return {};
+    }
+    const [{ n }] = await tx.select({ n: count() }).from(t).where(mine);
+    if (n >= MAX_REACTIONS_PER_PERSON) {
+      return { error: `Höchstens ${MAX_REACTIONS_PER_PERSON} Reaktionen – nimm erst eine weg.` };
+    }
+    const values = { userId: me.id, emoji: key, stickerId };
+    if (target.kind === "post") {
+      await tx.insert(postReactions).values({ ...values, postId: target.id }).onConflictDoNothing();
+    } else {
+      await tx.insert(commentReactions).values({ ...values, commentId: target.id }).onConflictDoNothing();
+    }
+    return {};
+  });
+
   revalidatePath("/", "layout");
+  return result;
 }
 
-// ---------- Kommentare ----------
+// ---------- Kommentare & Antworten ----------
 
-export type CommentState = { error?: string; body?: string; ok?: number } | undefined;
+export type CommentState = { error?: string; ok?: number } | undefined;
 
 export async function addComment(_prev: CommentState, formData: FormData): Promise<CommentState> {
   const me = await requireUser();
   const postId = String(formData.get("postId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
+  const replyTo = String(formData.get("replyTo") ?? "") || null;
+  const stickerId = String(formData.get("stickerId") ?? "") || null;
 
-  if (!body) return { error: "Der Kommentar ist leer." };
-  if (body.length > MAX_COMMENT) return { error: `Zu lang (max. ${MAX_COMMENT} Zeichen).`, body };
-  if (!(await postExists(postId))) return { error: "Den Beitrag gibt es nicht mehr." };
+  if (!body && !stickerId) return { error: "Der Kommentar ist leer." };
+  if (body.length > MAX_COMMENT) return { error: `Zu lang (max. ${MAX_COMMENT} Zeichen).` };
 
-  await db.insert(comments).values({ id: randomUUID(), postId, authorId: me.id, body });
+  const [post] = await db.select({ id: posts.id }).from(posts).where(eq(posts.id, postId)).limit(1);
+  if (!post) return { error: "Den Beitrag gibt es nicht mehr." };
+
+  if (stickerId && !(await getSticker(stickerId))) return { error: "Den Sticker gibt es nicht mehr." };
+
+  // Antworten hängen immer am obersten Kommentar (eine Ebene)
+  let parentId: string | null = null;
+  if (replyTo) {
+    const [target] = await db
+      .select({ id: comments.id, parentId: comments.parentId, postId: comments.postId })
+      .from(comments)
+      .where(eq(comments.id, replyTo))
+      .limit(1);
+    if (!target || target.postId !== postId) return { error: "Der Kommentar, auf den du antwortest, ist weg." };
+    parentId = target.parentId ?? target.id;
+  }
+
+  await db.insert(comments).values({
+    id: randomUUID(),
+    postId,
+    authorId: me.id,
+    parentId,
+    body: body || null,
+    stickerId,
+  });
 
   revalidatePath("/", "layout");
-  // ok wechselt bei jedem Erfolg, damit das Formular sich zuverlässig leert
   return { ok: Date.now() };
 }
 
-/** Löschen darf, wer den Kommentar geschrieben hat – oder wem der Beitrag gehört. */
+/** Löschen darf, wer den Kommentar geschrieben hat – oder wem der Beitrag gehört. Antworten gehen mit. */
 export async function deleteComment(commentId: string) {
   const me = await requireUser();
 
