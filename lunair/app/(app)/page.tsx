@@ -13,7 +13,7 @@ export default async function HomePage({ searchParams }: Props) {
   const me = await requireUser();
   const { vor } = await searchParams;
   const before = vor && !Number.isNaN(Date.parse(vor)) ? new Date(vor) : undefined;
-  const feed = await getFeed(before);
+  const feed = await getFeed(me.id, before);
 
   const others = await db
     .select({

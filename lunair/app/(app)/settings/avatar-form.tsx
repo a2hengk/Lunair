@@ -20,7 +20,7 @@ export function AvatarForm({ name, seed, image }: { name: string; seed: string; 
     setClientError(undefined);
 
     try {
-      const { blob } = await resizeImage(file, { maxEdge: 512, square: true, maxBytes: 300_000 });
+      const { blob } = await resizeImage(file, { maxEdge: 512, aspect: 1, maxBytes: 300_000 });
       setPreview(URL.createObjectURL(blob));
       const fd = new FormData();
       fd.set("avatar", blob, "avatar.jpg");

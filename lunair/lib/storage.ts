@@ -21,8 +21,8 @@ const useBlob = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_ST
 const LOCAL_DIR = path.join(process.cwd(), ".data", "uploads");
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
-/** Pfade sehen immer so aus: avatars/<userId>/<uuid>.jpg oder posts/<userId>/<uuid>.jpg */
-export const MEDIA_PATH = /^(avatars|posts)\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\.(jpg|png|webp)$/;
+/** Pfade sehen immer so aus: <avatars|banners|posts>/<userId>/<uuid>.jpg */
+export const MEDIA_PATH = /^(avatars|banners|posts)\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\.(jpg|png|webp)$/;
 
 const CONTENT_TYPES: Record<string, string> = {
   jpg: "image/jpeg",

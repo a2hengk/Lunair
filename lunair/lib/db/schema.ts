@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 // --- Better Auth Tabellen (Namen/Spalten müssen zum Better-Auth-Schema passen) ---
 
@@ -11,6 +11,7 @@ export const user = pgTable("user", {
   username: text("username").unique(), // username-Plugin, immer lowercase
   displayUsername: text("display_username"),
   bio: text("bio"),
+  bannerImage: text("banner_image"), // Speicher-Pfad wie image
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -108,7 +109,40 @@ export const postMedia = pgTable(
   (t) => [index("post_media_post_id_idx").on(t.postId)],
 );
 
+/** Eine Reaktion pro Person und Beitrag; andere Emoji = umstellen, gleiche nochmal = weg. */
+export const postReactions = pgTable(
+  "post_reactions",
+  {
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.userId] })],
+);
+
+export const comments = pgTable(
+  "comments",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("comments_post_created_idx").on(t.postId, t.createdAt)],
+);
+
 export type User = typeof user.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type PostMedia = typeof postMedia.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
