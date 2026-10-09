@@ -19,7 +19,7 @@ export type StoredImage = { path: string; width: number; height: number };
  * Prüft die echten Bytes (nicht den vom Browser behaupteten Typ),
  * liest die Maße aus und legt das Bild unter einem zufälligen Pfad ab.
  */
-export async function storeImage(file: File, folder: "avatars" | "posts", userId: string): Promise<StoredImage> {
+export async function storeImage(file: File, folder: "avatars" | "banners" | "posts", userId: string): Promise<StoredImage> {
   if (file.size === 0) throw new InvalidImageError("Ein Bild ist leer.");
   if (file.size > MAX_IMAGE_BYTES) throw new InvalidImageError("Ein Bild ist zu groß (max. 2 MB).");
 

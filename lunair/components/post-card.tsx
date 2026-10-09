@@ -3,6 +3,7 @@ import type { FeedPost } from "@/lib/posts";
 import { fullDate, timeAgo } from "@/lib/time-ago";
 import { Avatar } from "./avatar";
 import { MediaCarousel } from "./media-carousel";
+import { ReactionBar } from "./reaction-bar";
 
 /** Kurze reine Text-Beiträge („wie war dein Tag“) bekommen die Tagebuch-Schrift. */
 const SHORT_TEXT = 140;
@@ -54,6 +55,14 @@ export function PostCard({ post, linkToPost = true }: { post: FeedPost; linkToPo
           {post.body}
         </p>
       )}
+
+      <ReactionBar
+        postId={post.id}
+        reactions={post.reactions}
+        myReaction={post.myReaction}
+        commentCount={post.commentCount}
+        showCommentLink={linkToPost}
+      />
     </article>
   );
 }

@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { Avatar } from "@/components/avatar";
+import { BackButton } from "@/components/back-button";
 import { PostGrid } from "@/components/post-grid";
+import { ProfileBanner } from "@/components/profile-banner";
 import { db, schema } from "@/lib/db";
 import { countUserPosts, getUserPosts } from "@/lib/posts";
 import { requireUser } from "@/lib/session";
@@ -35,34 +37,41 @@ export default async function ProfilePage({ params }: Props) {
   if (!profile) notFound();
 
   const isMe = profile.id === me.id;
-  const [posts, postCount] = await Promise.all([getUserPosts(profile.id), countUserPosts(profile.id)]);
+  const [posts, postCount] = await Promise.all([getUserPosts(profile.id, me.id), countUserPosts(profile.id)]);
 
   return (
     <>
-      <header className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="font-medium">@{profile.displayUsername ?? profile.username}</span>
+      <header className="flex items-center gap-1 px-4 pt-2 pb-2">
+        <BackButton fallback="/" />
+        <span className="min-w-0 flex-1 truncate font-medium">@{profile.displayUsername ?? profile.username}</span>
         {isMe && (
-          <Link href="/settings" className="text-sm text-muted hover:text-ink">
-            Einstellungen
+          <Link
+            href="/settings"
+            aria-label="Einstellungen"
+            className="-mr-2 grid size-10 place-items-center rounded-full text-muted hover:bg-surface hover:text-ink"
+          >
+            <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+            </svg>
           </Link>
         )}
       </header>
 
-      <section className="px-4 pt-4 pb-6">
-        <div className="flex items-center gap-5">
+      <ProfileBanner image={profile.bannerImage} />
+
+      <section className="px-4 pb-6">
+        <div className="relative -mt-12 w-fit rounded-full ring-4 ring-sky">
           <Avatar name={profile.name} seed={profile.username ?? profile.id} image={profile.image} size="lg" />
-          <div className="min-w-0">
-            <h1 className="font-display text-3xl leading-tight break-words">{profile.name}</h1>
-            <p className="mt-1 text-sm text-muted">
-              {postCount === 1 ? "1 Beitrag" : `${postCount} Beiträge`} · dabei seit {joined.format(profile.createdAt)}
-            </p>
-          </div>
         </div>
+        <h1 className="mt-3 font-display text-3xl leading-tight break-words">{profile.name}</h1>
+        <p className="mt-1 text-sm text-muted">
+          {postCount === 1 ? "1 Beitrag" : `${postCount} Beiträge`} · dabei seit {joined.format(profile.createdAt)}
+        </p>
 
         {profile.bio ? (
-          <p className="mt-5 max-w-prose whitespace-pre-line">{profile.bio}</p>
+          <p className="mt-3 max-w-prose whitespace-pre-line">{profile.bio}</p>
         ) : (
-          isMe && <p className="mt-5 text-muted">Noch keine Bio. Erzähl den anderen kurz, was bei dir los ist.</p>
+          isMe && <p className="mt-3 text-muted">Noch keine Bio. Erzähl den anderen kurz, was bei dir los ist.</p>
         )}
 
         {isMe && (

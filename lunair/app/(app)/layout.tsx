@@ -1,3 +1,4 @@
+import { NavigationTracker } from "@/components/back-button";
 import { BottomNav } from "@/components/bottom-nav";
 import { requireUser } from "@/lib/session";
 
@@ -10,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </div>
       <BottomNav username={me.username ?? ""} />
+      <NavigationTracker />
     </>
   );
 }

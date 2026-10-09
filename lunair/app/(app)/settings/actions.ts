@@ -45,35 +45,60 @@ export async function createInvite() {
   revalidatePath("/settings");
 }
 
-// ---------- Profilbild ----------
+// ---------- Profilbild & Banner ----------
 
 export type AvatarState = { error?: string } | undefined;
 
-export async function updateAvatar(_prev: AvatarState, formData: FormData): Promise<AvatarState> {
+const IMAGE_FIELDS = {
+  avatars: { form: "avatar", column: "image" },
+  banners: { form: "banner", column: "bannerImage" },
+} as const;
+
+async function replaceImage(kind: keyof typeof IMAGE_FIELDS, formData: FormData): Promise<AvatarState> {
   const me = await requireUser();
-  const file = formData.get("avatar");
+  const { form, column } = IMAGE_FIELDS[kind];
+  const file = formData.get(form);
   if (!(file instanceof File)) return { error: "Kein Bild ausgewählt." };
 
   let path: string;
   try {
-    ({ path } = await storeImage(file, "avatars", me.id));
+    ({ path } = await storeImage(file, kind, me.id));
   } catch (err) {
     if (err instanceof InvalidImageError) return { error: err.message };
     if (err instanceof StorageNotConfiguredError) return { error: "Bilder-Upload ist noch nicht eingerichtet." };
     throw err;
   }
 
-  await db.update(schema.user).set({ image: path, updatedAt: new Date() }).where(eq(schema.user.id, me.id));
-  if (me.image) await deleteMedia([me.image]);
+  await db.update(schema.user).set({ [column]: path, updatedAt: new Date() }).where(eq(schema.user.id, me.id));
+  const old = me[column];
+  if (old) await deleteMedia([old]);
 
   revalidatePath("/", "layout");
   return undefined;
 }
 
-export async function removeAvatar() {
+async function clearImage(kind: keyof typeof IMAGE_FIELDS) {
   const me = await requireUser();
-  if (!me.image) return;
-  await db.update(schema.user).set({ image: null, updatedAt: new Date() }).where(eq(schema.user.id, me.id));
-  await deleteMedia([me.image]);
+  const { column } = IMAGE_FIELDS[kind];
+  const old = me[column];
+  if (!old) return;
+  await db.update(schema.user).set({ [column]: null, updatedAt: new Date() }).where(eq(schema.user.id, me.id));
+  await deleteMedia([old]);
   revalidatePath("/", "layout");
+}
+
+export async function updateAvatar(_prev: AvatarState, formData: FormData) {
+  return replaceImage("avatars", formData);
+}
+
+export async function removeAvatar() {
+  return clearImage("avatars");
+}
+
+export async function updateBanner(_prev: AvatarState, formData: FormData) {
+  return replaceImage("banners", formData);
+}
+
+export async function removeBanner() {
+  return clearImage("banners");
 }

@@ -6,8 +6,8 @@
 type Options = {
   /** längste Kante in px */
   maxEdge: number;
-  /** quadratisch mittig zuschneiden (Profilbild) */
-  square?: boolean;
+  /** mittig auf dieses Seitenverhältnis (Breite/Höhe) zuschneiden: 1 = Profilbild, 3 = Banner */
+  aspect?: number;
   /** Obergrenze pro Bild; wird notfalls mit niedrigerer Qualität erreicht */
   maxBytes?: number;
 };
@@ -37,7 +37,7 @@ function toBlob(canvas: HTMLCanvasElement, quality: number) {
   );
 }
 
-export async function resizeImage(file: File, { maxEdge, square = false, maxBytes = 950_000 }: Options) {
+export async function resizeImage(file: File, { maxEdge, aspect, maxBytes = 950_000 }: Options) {
   let source: ImageBitmap | HTMLImageElement;
   try {
     source = await decode(file);
@@ -48,12 +48,15 @@ export async function resizeImage(file: File, { maxEdge, square = false, maxByte
   const srcW = source.width;
   const srcH = source.height;
 
-  // Zuschnitt (nur bei square) und Zielgröße berechnen
-  const cropSize = Math.min(srcW, srcH);
-  const sx = square ? (srcW - cropSize) / 2 : 0;
-  const sy = square ? (srcH - cropSize) / 2 : 0;
-  const sw = square ? cropSize : srcW;
-  const sh = square ? cropSize : srcH;
+  // Zuschnitt (nur mit aspect) und Zielgröße berechnen
+  let sw = srcW;
+  let sh = srcH;
+  if (aspect) {
+    if (srcW / srcH > aspect) sw = Math.round(srcH * aspect);
+    else sh = Math.round(srcW / aspect);
+  }
+  const sx = (srcW - sw) / 2;
+  const sy = (srcH - sh) / 2;
   const scale = Math.min(1, maxEdge / Math.max(sw, sh));
   const width = Math.round(sw * scale);
   const height = Math.round(sh * scale);

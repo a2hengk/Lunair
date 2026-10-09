@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { signOut } from "@/app/(auth)/actions";
+import { BackButton } from "@/components/back-button";
 import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { createInvite } from "./actions";
 import { AvatarForm } from "./avatar-form";
+import { BannerForm } from "./banner-form";
 import { CopyLink } from "./copy-link";
 import { ProfileForm } from "./profile-form";
 
@@ -34,14 +36,18 @@ export default async function SettingsPage() {
   const base = `${proto}://${host}`;
 
   return (
-    <div className="px-4 pt-4">
-      <h1 className="mb-6 font-display text-3xl">Einstellungen</h1>
+    <div className="px-4 pt-3">
+      <div className="mb-4 flex items-center gap-1">
+        <BackButton fallback={`/u/${me.username}`} />
+        <h1 className="font-display text-3xl">Einstellungen</h1>
+      </div>
 
       <section aria-labelledby="profil" className="mb-10">
         <h2 id="profil" className="mb-4 text-lg font-semibold">
           Profil
         </h2>
         <AvatarForm name={me.name} seed={me.username ?? me.id} image={me.image} />
+        <BannerForm image={me.bannerImage} />
         <p className="mb-4 text-sm text-muted">Benutzername: @{me.displayUsername ?? me.username}</p>
         <ProfileForm name={me.name} bio={me.bio ?? ""} />
       </section>
