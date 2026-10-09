@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, lt, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, lt, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "./db";
 import { sortReactions, type ReactionSummary, type StickerInfo } from "./reactions";
 
@@ -15,7 +15,11 @@ export type FeedPost = {
   reactions: ReactionSummary[];
   myReactions: string[];
   commentCount: number;
+  /** die bis zu 3 neuesten Kommentare, älteste zuerst – für die Fade-away-Animation */
+  commentPreview: CommentPreview[];
 };
+
+export type CommentPreview = { id: string; author: string; body: string | null; sticker: StickerInfo | null };
 
 const { posts, postMedia, postReactions, commentReactions, comments, stickers, user } = schema;
 
@@ -78,7 +82,7 @@ async function loadPosts(where: SQL | undefined, limit: number, viewerId: string
   const ids = rows.map((r) => r.id);
   if (ids.length === 0) return [];
 
-  const [media, reactions, commentCounts] = await Promise.all([
+  const [media, reactions, commentCounts, previews] = await Promise.all([
     db
       .select({ postId: postMedia.postId, path: postMedia.path, width: postMedia.width, height: postMedia.height })
       .from(postMedia)
@@ -90,6 +94,7 @@ async function loadPosts(where: SQL | undefined, limit: number, viewerId: string
       .from(comments)
       .where(inArray(comments.postId, ids))
       .groupBy(comments.postId),
+    latestComments(ids),
   ]);
 
   return rows.map((r) => ({
@@ -101,7 +106,41 @@ async function loadPosts(where: SQL | undefined, limit: number, viewerId: string
     reactions: summarize(reactions.counts, r.id),
     myReactions: reactions.mine.filter((x) => x.targetId === r.id).map((x) => x.key),
     commentCount: commentCounts.find((x) => x.postId === r.id)?.n ?? 0,
+    commentPreview: previews
+      .filter((c) => c.post_id === r.id)
+      .map((c) => ({
+        id: c.id,
+        author: c.author,
+        body: c.body,
+        sticker: c.s_id && c.s_name && c.s_path ? { id: c.s_id, name: c.s_name, path: c.s_path } : null,
+      })),
   }));
+}
+
+/** Pro Beitrag die 3 neuesten Kommentare (eine Abfrage für alle Beiträge, per Fensterfunktion). */
+async function latestComments(ids: string[]) {
+  const result = await db.execute<{
+    id: string;
+    post_id: string;
+    author: string;
+    body: string | null;
+    s_id: string | null;
+    s_name: string | null;
+    s_path: string | null;
+  }>(sql`
+    select id, post_id, author, body, s_id, s_name, s_path from (
+      select ${comments.id} as id, ${comments.postId} as post_id, ${user.name} as author, ${comments.body} as body,
+             ${stickers.id} as s_id, ${stickers.name} as s_name, ${stickers.path} as s_path, ${comments.createdAt} as created_at,
+             row_number() over (partition by ${comments.postId} order by ${comments.createdAt} desc) as rn
+      from ${comments}
+      join ${user} on ${user.id} = ${comments.authorId}
+      left join ${stickers} on ${stickers.id} = ${comments.stickerId}
+      where ${inArray(comments.postId, ids)}
+    ) latest
+    where rn <= 3
+    order by created_at asc
+  `);
+  return result.rows;
 }
 
 export const FEED_PAGE_SIZE = 20;

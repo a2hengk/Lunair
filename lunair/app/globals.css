@@ -56,6 +56,36 @@ body {
   outline-offset: 2px;
 }
 
+/* Reaktionen/Kommentare steigen auf und verblassen (components/floating-reactions.tsx) */
+@keyframes float-away {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(calc(var(--s) * 0.6));
+  }
+  14% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.15), calc(var(--rise) * -0.15)) scale(var(--s));
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--rise) * -1)) scale(var(--s));
+  }
+}
+
+.float-away {
+  opacity: 0;
+  animation: float-away var(--dur) cubic-bezier(0.2, 0.6, 0.3, 1) var(--delay) both;
+  will-change: transform, opacity;
+}
+
+/* Kommentar-Blasen gleichmäßig, damit der Abstand zwischen ihnen bleibt */
+.float-away-even {
+  animation-timing-function: linear;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

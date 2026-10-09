@@ -44,13 +44,18 @@ export function CommentForm({ postId }: { postId: string }) {
   const [handledReply, setHandledReply] = useState<ReplyTarget | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
-  // nach erfolgreichem Absenden alles zurücksetzen; bei Fehler bleibt alles stehen
+  // Wie im Messenger: Feld sofort leeren, damit man direkt weiterschreiben kann.
+  // Schlägt das Senden fehl, kommt der Text zurück (sofern inzwischen nichts Neues getippt wurde).
   const [state, action, isPending] = useActionState(async (prev: CommentState, fd: FormData) => {
+    const sent = { body: String(fd.get("body") ?? ""), sticker, replyTo };
+    setBody("");
+    setSticker(null);
+    setReplyTo(null);
     const res = await addComment(prev, fd);
-    if (res?.ok) {
-      setBody("");
-      setSticker(null);
-      setReplyTo(null);
+    if (res?.error) {
+      setBody((current) => current || sent.body);
+      setSticker((current) => current ?? sent.sticker);
+      setReplyTo(sent.replyTo);
     }
     return res;
   }, undefined);
