@@ -1,4 +1,4 @@
-import { type AnyPgColumn, boolean, index, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, boolean, date, index, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 // --- Better Auth Tabellen (Namen/Spalten müssen zum Better-Auth-Schema passen) ---
 
@@ -182,6 +182,39 @@ export const commentReactions = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.commentId, t.userId, t.emoji] })],
+);
+
+/**
+ * Das gemeinsame Pet. Genau eine Zeile (id = PET_ID in lib/pet.ts), wird beim ersten Aufruf angelegt.
+ * Satt/Laune werden nicht gespeichert, sondern aus last_fed_at/last_pet_at berechnet – kein Cron nötig.
+ * Streak: Tage in Folge (Berliner Zeit), an denen irgendwer gefüttert oder gestreichelt hat.
+ */
+export const pet = pgTable("pet", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  lastFedAt: timestamp("last_fed_at", { withTimezone: true }),
+  lastPetAt: timestamp("last_pet_at", { withTimezone: true }),
+  streak: integer("streak").notNull().default(0),
+  bestStreak: integer("best_streak").notNull().default(0),
+  lastStreakDay: date("last_streak_day", { mode: "string" }), // YYYY-MM-DD, Berliner Datum
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Wer hat wann gefüttert/gestreichelt – für „Lena hat vor 2 Std gefüttert“. */
+export const petActions = pgTable(
+  "pet_actions",
+  {
+    id: text("id").primaryKey(),
+    petId: text("pet_id")
+      .notNull()
+      .references(() => pet.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["feed", "pet"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("pet_actions_pet_created_idx").on(t.petId, t.createdAt.desc())],
 );
 
 export type User = typeof user.$inferSelect;
