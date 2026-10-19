@@ -54,5 +54,6 @@ Ohne Blob-Token speichert lunair lokal unter `.data/uploads`. Auf Vercel ohne Bl
 - [x] Eigene Sticker (Einstellungen → Sticker, 256 × 256 PNG, für alle nutzbar)
 - [x] Fotos am PC: Pfeile, Pfeiltasten, mit der Maus wischen; Vollbild mit Zoom
 - [x] Reaktionen und neueste Kommentare steigen beim Sichtbarwerden auf und verblassen
+- [x] Gemeinsames Pet (`/pet`): füttern, streicheln, Streak nach Berliner Tagen – Zustand kommt aus Zeitstempeln, kein Cron
 - [ ] Stories
 - [ ] PWA

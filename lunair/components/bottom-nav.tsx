@@ -19,6 +19,18 @@ function PlusIcon() {
   );
 }
 
+function PetIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="13" r="7" />
+      <circle cx="9.5" cy="12" r=".9" fill="currentColor" stroke="none" />
+      <circle cx="14.5" cy="12" r=".9" fill="currentColor" stroke="none" />
+      <path d="M10 15.2q2 1.6 4 0" strokeLinecap="round" />
+      <path d="M13 6a2.5 2.5 0 1 1-2-3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ProfileIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -28,7 +40,8 @@ function ProfileIcon() {
   );
 }
 
-export function BottomNav({ username }: { username: string }) {
+/** `petNeedsCare`: heute hat sich noch keiner ums Pet gekümmert → kleiner Mondpunkt. */
+export function BottomNav({ username, petNeedsCare = false }: { username: string; petNeedsCare?: boolean }) {
   const pathname = usePathname();
   const profileHref = `/u/${username}`;
 
@@ -48,6 +61,16 @@ export function BottomNav({ username }: { username: string }) {
         <Link href="/new" className={item(pathname === "/new")} aria-current={pathname === "/new" ? "page" : undefined}>
           <PlusIcon />
           Posten
+        </Link>
+        <Link href="/pet" className={item(pathname === "/pet")} aria-current={pathname === "/pet" ? "page" : undefined}>
+          <span className="relative">
+            <PetIcon />
+            {petNeedsCare && (
+              <span className="absolute -top-0.5 -right-1 size-2.5 rounded-full border-2 border-surface bg-moon" />
+            )}
+          </span>
+          Pet
+          {petNeedsCare && <span className="sr-only"> (braucht heute noch Pflege)</span>}
         </Link>
         <Link
           href={profileHref}

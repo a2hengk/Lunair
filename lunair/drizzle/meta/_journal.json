@@ -29,6 +29,13 @@
       "when": 1791566120895,
       "tag": "0003_sticker_mehrfach_reaktionen_antworten",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792390875893,
+      "tag": "0004_pet",
+      "breakpoints": true
     }
   ]
 }

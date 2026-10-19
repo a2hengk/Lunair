@@ -86,6 +86,46 @@ body {
   animation-timing-function: linear;
 }
 
+/* Pet: atmet leise, hüpft nach dem Füttern/Streicheln (app/(app)/pet) */
+@keyframes pet-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.01, 0.99);
+  }
+}
+
+@keyframes pet-hop {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  20% {
+    transform: translateY(0) scale(1.08, 0.9);
+  }
+  45% {
+    transform: translateY(-22px) scale(0.95, 1.06);
+  }
+  70% {
+    transform: translateY(0) scale(1.05, 0.95);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+.pet-bob {
+  animation: pet-bob 3.2s ease-in-out infinite;
+}
+
+.pet-hop {
+  animation:
+    pet-hop 0.7s cubic-bezier(0.3, 0.7, 0.4, 1),
+    pet-bob 3.2s ease-in-out 0.7s infinite;
+  transform-origin: 50% 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
